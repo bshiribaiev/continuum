@@ -11,8 +11,8 @@
 	<groupId>com.continuum</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>backend</name>
-	<description>Backend for continuum</description>
+	<name>App</name>
+	<description>Backend for Continuum</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -37,14 +37,14 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+    	</dependency>
 	</dependencies>
 
 	<build>
