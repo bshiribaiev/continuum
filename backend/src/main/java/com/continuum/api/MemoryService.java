@@ -5,16 +5,14 @@ package com.continuum.api;
 import java.util.*;
 import org.springframework.stereotype.Service;
 
-import com.continuum.api.ApiController.MemoryResponse;
-
 @Service
 public class MemoryService {
 
-    private final Map<String, ApiController.MemoryResponse> memories = new HashMap<>();
+    private final Map<String, ApiModels.MemoryResponse> memories = new HashMap<>();
 
     // Logic for creating a memory
-    public ApiController.MemoryResponse createMemory(ApiController.CreateMemoryRequest request) {
-        ApiController.MemoryResponse resp = new ApiController.MemoryResponse();
+    public ApiModels.MemoryResponse createMemory(ApiModels.CreateMemoryRequest request) {
+        ApiModels.MemoryResponse resp = new ApiModels.MemoryResponse();
         resp.id = UUID.randomUUID().toString();
         resp.userId = request.userId;
         resp.source = request.source;
@@ -25,18 +23,18 @@ public class MemoryService {
     }
 
     // List all memories
-    public List<ApiController.MemoryResponse> listMemories() {
+    public List<ApiModels.MemoryResponse> listMemories() {
         return new ArrayList<>(memories.values());
     }
 
     // Get memory by id
-    public ApiController.MemoryResponse getMemoryById(String id) {
+    public ApiModels.MemoryResponse getMemoryById(String id) {
         return memories.get(id);
     }
 
     // Delete memory 
     public boolean deleteMemoryById(String id) {
-        MemoryResponse removed = memories.remove(id);
+        ApiModels.MemoryResponse removed = memories.remove(id);
         return removed != null;
     }
 }

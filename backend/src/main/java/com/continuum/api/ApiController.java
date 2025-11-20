@@ -2,6 +2,7 @@
 
 package com.continuum.api;
 
+import java.util.*;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,25 +11,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.HttpStatus;
-import java.util.*;
+import jakarta.validation.Valid;
 
 @RestController
 public class ApiController {
-
-    // Request model for http 
-    public static class CreateMemoryRequest {
-        public String userId;
-        public String source;
-        public String content;
-    }
-
-    // Reponse model for http
-    public static class MemoryResponse {
-        public String id;
-        public String userId;
-        public String source;
-        public String content;
-    }
 
     private final MemoryService memoryService;
     
@@ -39,21 +25,21 @@ public class ApiController {
 
     // Create memory
     @PostMapping("api/memories")
-    public ResponseEntity<MemoryResponse> createMemory(@RequestBody CreateMemoryRequest request) {
-        MemoryResponse resp = memoryService.createMemory(request);
+    public ResponseEntity<ApiModels.MemoryResponse> createMemory(@Valid @RequestBody ApiModels.CreateMemoryRequest request) {
+        ApiModels.MemoryResponse resp = memoryService.createMemory(request);
         return new ResponseEntity<>(resp, HttpStatus.CREATED);
     }
 
     // Get all memories
     @GetMapping("api/memories")
-    public List<MemoryResponse> getMemory() {
+    public List<ApiModels.MemoryResponse> getMemory() {
         return memoryService.listMemories();
     }
 
     // Get specific memory
     @GetMapping("api/memories/{id}")
-    public ResponseEntity<MemoryResponse> getMemoryById(@PathVariable String id) {
-        MemoryResponse resp = memoryService.getMemoryById(id);
+    public ResponseEntity<ApiModels.MemoryResponse> getMemoryById(@PathVariable String id) {
+        ApiModels.MemoryResponse resp = memoryService.getMemoryById(id);
         if (resp == null) {
             return ResponseEntity.notFound().build();
         }
