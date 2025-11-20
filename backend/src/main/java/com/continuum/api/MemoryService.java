@@ -5,9 +5,11 @@ package com.continuum.api;
 import java.util.*;
 import org.springframework.stereotype.Service;
 
+import com.continuum.api.ApiController.MemoryResponse;
+
 @Service
 public class MemoryService {
-    
+
     private final Map<String, ApiController.MemoryResponse> memories = new HashMap<>();
 
     // Logic for creating a memory
@@ -30,5 +32,11 @@ public class MemoryService {
     // Get memory by id
     public ApiController.MemoryResponse getMemoryById(String id) {
         return memories.get(id);
+    }
+
+    // Delete memory 
+    public boolean deleteMemoryById(String id) {
+        MemoryResponse removed = memories.remove(id);
+        return removed != null;
     }
 }
