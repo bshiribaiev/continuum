@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 
@@ -44,6 +45,18 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(resp);
+    }
+
+    // Update memory
+    @PutMapping("api/memories/{id}")
+    public ResponseEntity<ApiModels.MemoryResponse> updateMemory(@PathVariable String id,
+            @Valid @RequestBody ApiModels.CreateMemoryRequest request) {
+
+        ApiModels.MemoryResponse resp = memoryService.updateMemory(id, request);
+        if (resp == null) {
+            return ResponseEntity.notFound().build();   
+        }
+        return ResponseEntity.ok(resp);                 
     }
 
     // Delete memory

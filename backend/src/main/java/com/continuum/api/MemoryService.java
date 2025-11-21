@@ -10,7 +10,7 @@ public class MemoryService {
 
     private final Map<String, ApiModels.MemoryResponse> memories = new HashMap<>();
 
-    // Logic for creating a memory
+    // Create a memory
     public ApiModels.MemoryResponse createMemory(ApiModels.CreateMemoryRequest request) {
         ApiModels.MemoryResponse resp = new ApiModels.MemoryResponse();
         resp.id = UUID.randomUUID().toString();
@@ -20,6 +20,20 @@ public class MemoryService {
 
         memories.put(resp.id, resp);
         return resp;
+    }
+
+    // Update a memory
+    public ApiModels.MemoryResponse updateMemory(String id, ApiModels.CreateMemoryRequest request) {
+        ApiModels.MemoryResponse existing = memories.get(id);
+        if (existing == null) {
+            return null; // controller will turn this into 404
+        }
+        
+        existing.userId = request.userId;
+        existing.source = request.source;
+        existing.content = request.content;
+
+        return existing;
     }
 
     // List all memories
