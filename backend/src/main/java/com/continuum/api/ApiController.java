@@ -6,6 +6,7 @@ import java.util.*;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +19,7 @@ import jakarta.validation.Valid;
 public class ApiController {
 
     private final MemoryService memoryService;
-    
+
     // Constructor
     public ApiController(MemoryService memoryService) {
         this.memoryService = memoryService;
@@ -26,15 +27,50 @@ public class ApiController {
 
     // Create memory
     @PostMapping("api/memories")
-    public ResponseEntity<ApiModels.MemoryResponse> createMemory(@Valid @RequestBody ApiModels.CreateMemoryRequest request) {
+    public ResponseEntity<ApiModels.MemoryResponse> createMemory(
+            @Valid @RequestBody ApiModels.CreateMemoryRequest request) {
         ApiModels.MemoryResponse resp = memoryService.createMemory(request);
         return new ResponseEntity<>(resp, HttpStatus.CREATED);
     }
 
+    // Ingest a raw message and turn it into a memory
+    @PostMapping("api/ingestion/messages")
+    public ResponseEntity<ApiModels.MemoryResponse> ingestMessage(
+            @Valid @RequestBody ApiModels.IngestMessageRequest request) {
+
+        ApiModels.CreateMemoryRequest memoryRequest = new ApiModels.CreateMemoryRequest();
+        memoryRequest.userId = request.userId;
+        memoryRequest.source = request.source;
+        memoryRequest.content = request.text;
+
+        ApiModels.MemoryResponse resp = memoryService.createMemory(memoryRequest);
+        return new ResponseEntity<>(resp, HttpStatus.CREATED);
+    }
+
+    // Query context: return the most relevant memories for a user + query
+    @PostMapping("api/context/query")
+    public ResponseEntity<ApiModels.ContextQueryResponse> queryContext(
+            @Valid @RequestBody ApiModels.ContextQueryRequest request) {
+
+        int limit = (request.limit == null || request.limit <= 0) ? 5 : request.limit;
+        List<ApiModels.MemoryResponse> results = memoryService.queryContext(
+                request.userId,
+                request.query,
+                limit);
+
+        ApiModels.ContextQueryResponse response = new ApiModels.ContextQueryResponse();
+        response.memories = results;
+
+        return ResponseEntity.ok(response);
+    }
+
     // Get all memories
     @GetMapping("api/memories")
-    public List<ApiModels.MemoryResponse> getMemory() {
-        return memoryService.listMemories();
+    public List<ApiModels.MemoryResponse> getMemories(@RequestParam(required = false) String userId) {
+        if (userId == null) {
+            return memoryService.listMemories();
+        }
+        return memoryService.listMemoriesByUserId(userId);
     }
 
     // Get specific memory
@@ -54,9 +90,9 @@ public class ApiController {
 
         ApiModels.MemoryResponse resp = memoryService.updateMemory(id, request);
         if (resp == null) {
-            return ResponseEntity.notFound().build();   
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(resp);                 
+        return ResponseEntity.ok(resp);
     }
 
     // Delete memory
