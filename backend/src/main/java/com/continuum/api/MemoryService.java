@@ -4,6 +4,7 @@ package com.continuum.api;
 
 import java.util.*;
 import org.springframework.stereotype.Service;
+import org.springframework.lang.NonNull;
 
 @Service
 public class MemoryService {
@@ -38,7 +39,7 @@ public class MemoryService {
     }
 
     // Update a memory
-    public ApiModels.MemoryResponse updateMemory(String id, ApiModels.CreateMemoryRequest request) {
+    public ApiModels.MemoryResponse updateMemory(@NonNull String id, ApiModels.CreateMemoryRequest request) {
         Optional<Memory> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null; // controller will turn this into 404
@@ -62,7 +63,7 @@ public class MemoryService {
 
     // List all memories by user
     public List<ApiModels.MemoryResponse> listMemoriesByUserId(String userId) {
-        return repository.findAll().stream()
+        return repository.findByUserId(userId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -101,7 +102,7 @@ public class MemoryService {
     }
 
     // Get memory by id
-    public ApiModels.MemoryResponse getMemoryById(String id) {
+    public ApiModels.MemoryResponse getMemoryById(@NonNull String id) {
         Optional<Memory> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null;
@@ -110,7 +111,7 @@ public class MemoryService {
     }
 
     // Delete memory
-    public boolean deleteMemoryById(String id) {
+    public boolean deleteMemoryById(@NonNull String id) {
         if (!repository.existsById(id)) {
             return false;
         }

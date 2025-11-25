@@ -1,3 +1,5 @@
+// Database structure
+
 package com.continuum.api;
 
 import jakarta.persistence.Entity;

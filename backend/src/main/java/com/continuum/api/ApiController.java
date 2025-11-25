@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import jakarta.validation.Valid;
 
 @RestController
@@ -75,7 +76,7 @@ public class ApiController {
 
     // Get specific memory
     @GetMapping("api/memories/{id}")
-    public ResponseEntity<ApiModels.MemoryResponse> getMemoryById(@PathVariable String id) {
+    public ResponseEntity<ApiModels.MemoryResponse> getMemoryById(@PathVariable @NonNull String id) {
         ApiModels.MemoryResponse resp = memoryService.getMemoryById(id);
         if (resp == null) {
             return ResponseEntity.notFound().build();
@@ -85,7 +86,7 @@ public class ApiController {
 
     // Update memory
     @PutMapping("api/memories/{id}")
-    public ResponseEntity<ApiModels.MemoryResponse> updateMemory(@PathVariable String id,
+    public ResponseEntity<ApiModels.MemoryResponse> updateMemory(@PathVariable @NonNull String id,
             @Valid @RequestBody ApiModels.CreateMemoryRequest request) {
 
         ApiModels.MemoryResponse resp = memoryService.updateMemory(id, request);
@@ -97,7 +98,7 @@ public class ApiController {
 
     // Delete memory
     @DeleteMapping("api/memories/{id}")
-    public ResponseEntity<Void> deleteMemoryById(@PathVariable String id) {
+    public ResponseEntity<Void> deleteMemoryById(@PathVariable @NonNull String id) {
         boolean deleted = memoryService.deleteMemoryById(id);
         if (!deleted) {
             return ResponseEntity.notFound().build();

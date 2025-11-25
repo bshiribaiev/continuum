@@ -1,3 +1,5 @@
+// Objects to define the structure of requests and transfer data
+
 package com.continuum.api;
 
 import jakarta.validation.constraints.NotBlank;
