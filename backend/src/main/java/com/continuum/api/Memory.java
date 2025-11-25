@@ -1,4 +1,4 @@
-// Database structure
+// Memory table structure
 
 package com.continuum.api;
 

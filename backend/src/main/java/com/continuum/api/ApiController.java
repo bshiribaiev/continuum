@@ -20,10 +20,12 @@ import jakarta.validation.Valid;
 public class ApiController {
 
     private final MemoryService memoryService;
+    private final UserService userService;
 
     // Constructor
-    public ApiController(MemoryService memoryService) {
+    public ApiController(MemoryService memoryService, UserService userService) {
         this.memoryService = memoryService;
+        this.userService = userService;
     }
 
     // Create memory
@@ -34,6 +36,57 @@ public class ApiController {
         return new ResponseEntity<>(resp, HttpStatus.CREATED);
     }
 
+    // Create user
+    @PostMapping("api/users")
+    public ResponseEntity<ApiModels.UserResponse> createUser(
+            @Valid @RequestBody ApiModels.CreateUserRequest request) {
+        try {
+            ApiModels.UserResponse resp = userService.createUser(request);
+            return new ResponseEntity<>(resp, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Get all memories
+    @GetMapping("api/memories")
+    public List<ApiModels.MemoryResponse> getMemories(@RequestParam(required = false) String userId) {
+        if (userId == null) {
+            return memoryService.listMemories();
+        }
+        return memoryService.listMemoriesByUserId(userId);
+    }
+
+    // Get all users
+    @GetMapping("api/users")
+    public List<ApiModels.UserResponse> getUsers(@RequestParam(required = false) String username) {
+        if (username == null) {
+            return userService.listUsers();
+        }
+        ApiModels.UserResponse user = userService.getUserByUsername(username);
+        return user != null ? List.of(user) : List.of();
+    }
+
+    // Get specific user
+    @GetMapping("api/users/{id}")
+    public ResponseEntity<ApiModels.UserResponse> getUserById(@PathVariable @NonNull String id) {
+        ApiModels.UserResponse resp = userService.getUserById(id);
+        if (resp == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(resp);
+    }
+
+    // Get specific memory
+    @GetMapping("api/memories/{id}")
+    public ResponseEntity<ApiModels.MemoryResponse> getMemoryById(@PathVariable @NonNull String id) {
+        ApiModels.MemoryResponse resp = memoryService.getMemoryById(id);
+        if (resp == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(resp);
+    }
+    
     // Ingest a raw message and turn it into a memory
     @PostMapping("api/ingestion/messages")
     public ResponseEntity<ApiModels.MemoryResponse> ingestMessage(
@@ -65,25 +118,6 @@ public class ApiController {
         return ResponseEntity.ok(response);
     }
 
-    // Get all memories
-    @GetMapping("api/memories")
-    public List<ApiModels.MemoryResponse> getMemories(@RequestParam(required = false) String userId) {
-        if (userId == null) {
-            return memoryService.listMemories();
-        }
-        return memoryService.listMemoriesByUserId(userId);
-    }
-
-    // Get specific memory
-    @GetMapping("api/memories/{id}")
-    public ResponseEntity<ApiModels.MemoryResponse> getMemoryById(@PathVariable @NonNull String id) {
-        ApiModels.MemoryResponse resp = memoryService.getMemoryById(id);
-        if (resp == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(resp);
-    }
-
     // Update memory
     @PutMapping("api/memories/{id}")
     public ResponseEntity<ApiModels.MemoryResponse> updateMemory(@PathVariable @NonNull String id,
@@ -94,6 +128,31 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(resp);
+    }
+
+    // Update user
+    @PutMapping("api/users/{id}")
+    public ResponseEntity<ApiModels.UserResponse> updateUser(@PathVariable @NonNull String id,
+            @Valid @RequestBody ApiModels.CreateUserRequest request) {
+        try {
+            ApiModels.UserResponse resp = userService.updateUser(id, request);
+            if (resp == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(resp);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Delete user
+    @DeleteMapping("api/users/{id}")
+    public ResponseEntity<Void> deleteUserById(@PathVariable @NonNull String id) {
+        boolean deleted = userService.deleteUserById(id);
+        if (!deleted) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.noContent().build();
     }
 
     // Delete memory

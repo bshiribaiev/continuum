@@ -1,4 +1,4 @@
-// Service to handle logic part of http requests of the memory endpoint
+// Service to handle logic of http requests of the memory endpoint
 
 package com.continuum.api;
 
