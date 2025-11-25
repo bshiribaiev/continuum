@@ -21,11 +21,13 @@ public class ApiController {
 
     private final MemoryService memoryService;
     private final UserService userService;
+    private final WorkspaceService workspaceService;
 
     // Constructor
-    public ApiController(MemoryService memoryService, UserService userService) {
+    public ApiController(MemoryService memoryService, UserService userService, WorkspaceService workspaceService) {
         this.memoryService = memoryService;
         this.userService = userService;
+        this.workspaceService = workspaceService;
     }
 
     // Create memory
@@ -48,6 +50,14 @@ public class ApiController {
         }
     }
 
+    // Create workspace
+    @PostMapping("api/workspaces")
+    public ResponseEntity<ApiModels.WorkspaceResponse> createWorkspace(
+            @Valid @RequestBody ApiModels.CreateWorkspaceRequest request) {
+        ApiModels.WorkspaceResponse resp = workspaceService.createWorkspace(request);
+        return new ResponseEntity<>(resp, HttpStatus.CREATED);
+    }
+
     // Get all memories
     @GetMapping("api/memories")
     public List<ApiModels.MemoryResponse> getMemories(@RequestParam(required = false) String userId) {
@@ -67,6 +77,15 @@ public class ApiController {
         return user != null ? List.of(user) : List.of();
     }
 
+    // Get all workspaces
+    @GetMapping("api/workspaces")
+    public List<ApiModels.WorkspaceResponse> getWorkspaces(@RequestParam(required = false) String ownerId) {
+        if (ownerId == null) {
+            return workspaceService.listWorkspaces();
+        }
+        return workspaceService.listWorkspacesByOwner(ownerId);
+    }
+
     // Get specific user
     @GetMapping("api/users/{id}")
     public ResponseEntity<ApiModels.UserResponse> getUserById(@PathVariable @NonNull String id) {
@@ -81,6 +100,16 @@ public class ApiController {
     @GetMapping("api/memories/{id}")
     public ResponseEntity<ApiModels.MemoryResponse> getMemoryById(@PathVariable @NonNull String id) {
         ApiModels.MemoryResponse resp = memoryService.getMemoryById(id);
+        if (resp == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(resp);
+    }
+
+    // Get specific workspace
+    @GetMapping("api/workspaces/{id}")
+    public ResponseEntity<ApiModels.WorkspaceResponse> getWorkspaceById(@PathVariable @NonNull String id) {
+        ApiModels.WorkspaceResponse resp = workspaceService.getWorkspaceById(id);
         if (resp == null) {
             return ResponseEntity.notFound().build();
         }
@@ -145,6 +174,17 @@ public class ApiController {
         }
     }
 
+    // Update workspace
+    @PutMapping("api/workspaces/{id}")
+    public ResponseEntity<ApiModels.WorkspaceResponse> updateWorkspace(@PathVariable @NonNull String id,
+            @Valid @RequestBody ApiModels.CreateWorkspaceRequest request) {
+        ApiModels.WorkspaceResponse resp = workspaceService.updateWorkspace(id, request);
+        if (resp == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(resp);
+    }
+
     // Delete user
     @DeleteMapping("api/users/{id}")
     public ResponseEntity<Void> deleteUserById(@PathVariable @NonNull String id) {
@@ -159,6 +199,16 @@ public class ApiController {
     @DeleteMapping("api/memories/{id}")
     public ResponseEntity<Void> deleteMemoryById(@PathVariable @NonNull String id) {
         boolean deleted = memoryService.deleteMemoryById(id);
+        if (!deleted) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    // Delete workspace
+    @DeleteMapping("api/workspaces/{id}")
+    public ResponseEntity<Void> deleteWorkspaceById(@PathVariable @NonNull String id) {
+        boolean deleted = workspaceService.deleteWorkspaceById(id);
         if (!deleted) {
             return ResponseEntity.notFound().build();
         }
