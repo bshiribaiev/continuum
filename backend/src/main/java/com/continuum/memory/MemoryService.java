@@ -1,6 +1,6 @@
 // Service to handle logic of http requests of the memory endpoint
 
-package com.continuum.api;
+package com.continuum.memory;
 
 import java.util.*;
 import org.springframework.stereotype.Service;
@@ -11,14 +11,13 @@ public class MemoryService {
 
     private final MemoryRepository repository;
 
-    // Constructor
     public MemoryService(MemoryRepository repository) {
         this.repository = repository;
     }
 
     // Convert Memory entity into MemoryResponse
-    public ApiModels.MemoryResponse toResponse(Memory memory) {
-        ApiModels.MemoryResponse resp = new ApiModels.MemoryResponse();
+    public MemoryDto.MemoryResponse toResponse(Memory memory) {
+        MemoryDto.MemoryResponse resp = new MemoryDto.MemoryResponse();
         resp.id = memory.id;
         resp.userId = memory.userId;
         resp.source = memory.source;
@@ -27,7 +26,7 @@ public class MemoryService {
     }
 
     // Create a memory
-    public ApiModels.MemoryResponse createMemory(ApiModels.CreateMemoryRequest request) {
+    public MemoryDto.MemoryResponse createMemory(MemoryDto.CreateMemoryRequest request) {
         Memory memory = new Memory();
         memory.id = UUID.randomUUID().toString();
         memory.userId = request.userId;
@@ -39,7 +38,8 @@ public class MemoryService {
     }
 
     // Update a memory
-    public ApiModels.MemoryResponse updateMemory(@NonNull String id, ApiModels.CreateMemoryRequest request) {
+    public MemoryDto.MemoryResponse updateMemory(@NonNull String id,
+            MemoryDto.CreateMemoryRequest request) {
         Optional<Memory> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null; // controller will turn this into 404
@@ -55,26 +55,27 @@ public class MemoryService {
     }
 
     // List all memories
-    public List<ApiModels.MemoryResponse> listMemories() {
+    public List<MemoryDto.MemoryResponse> listMemories() {
         return repository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     // List all memories by user
-    public List<ApiModels.MemoryResponse> listMemoriesByUserId(String userId) {
+    public List<MemoryDto.MemoryResponse> listMemoriesByUserId(String userId) {
         return repository.findByUserId(userId).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    // Query memories for a user based on a simple text query, later this will call vector/graph search
-    public List<ApiModels.MemoryResponse> queryContext(String userId, String query, int limit) {
+    // Query memories for a user based on a simple text query, later this will call
+    // vector/graph search
+    public List<MemoryDto.MemoryResponse> queryContext(String userId, String query, int limit) {
         String normalizedQuery = query.toLowerCase();
         String[] terms = normalizedQuery.split("\\s+");
 
         List<Memory> userMemories = repository.findByUserId(userId);
-        
+
         return userMemories.stream()
                 .sorted((a, b) -> {
                     int scoreA = score(a.content, terms);
@@ -86,7 +87,8 @@ public class MemoryService {
                 .toList();
     }
 
-    // More matching words = higher score (will be replaced with embedded vectors later)
+    // More matching words = higher score (will be replaced with embedded vectors
+    // later)
     private int score(String content, String[] terms) {
         if (content == null) {
             return 0;
@@ -102,7 +104,7 @@ public class MemoryService {
     }
 
     // Get memory by id
-    public ApiModels.MemoryResponse getMemoryById(@NonNull String id) {
+    public MemoryDto.MemoryResponse getMemoryById(@NonNull String id) {
         Optional<Memory> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null;
@@ -119,3 +121,5 @@ public class MemoryService {
         return true;
     }
 }
+
+

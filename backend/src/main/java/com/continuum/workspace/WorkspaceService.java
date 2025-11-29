@@ -1,6 +1,6 @@
 // Logic for Workspace http requests
 
-package com.continuum.api;
+package com.continuum.workspace;
 
 import java.util.*;
 import org.springframework.stereotype.Service;
@@ -11,14 +11,13 @@ public class WorkspaceService {
 
     private final WorkspaceRepository repository;
 
-    // Constructor
     public WorkspaceService(WorkspaceRepository repository) {
         this.repository = repository;
     }
 
     // Convert Workspace entity into WorkspaceResponse DTO
-    private ApiModels.WorkspaceResponse toResponse(Workspace workspace) {
-        ApiModels.WorkspaceResponse resp = new ApiModels.WorkspaceResponse();
+    private WorkspaceDto.WorkspaceResponse toResponse(Workspace workspace) {
+        WorkspaceDto.WorkspaceResponse resp = new WorkspaceDto.WorkspaceResponse();
         resp.id = workspace.id;
         resp.name = workspace.name;
         resp.ownerId = workspace.ownerId;
@@ -28,7 +27,7 @@ public class WorkspaceService {
     }
 
     // Create a workspace
-    public ApiModels.WorkspaceResponse createWorkspace(ApiModels.CreateWorkspaceRequest request) {
+    public WorkspaceDto.WorkspaceResponse createWorkspace(WorkspaceDto.CreateWorkspaceRequest request) {
         Workspace workspace = new Workspace();
         workspace.id = UUID.randomUUID().toString();
         workspace.name = request.name;
@@ -40,7 +39,7 @@ public class WorkspaceService {
     }
 
     // Update a workspace
-    public ApiModels.WorkspaceResponse updateWorkspace(@NonNull String id, ApiModels.CreateWorkspaceRequest request) {
+    public WorkspaceDto.WorkspaceResponse updateWorkspace(@NonNull String id, WorkspaceDto.CreateWorkspaceRequest request) {
         Optional<Workspace> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null; // controller will turn this into 404
@@ -57,21 +56,21 @@ public class WorkspaceService {
     }
 
     // List all workspaces
-    public List<ApiModels.WorkspaceResponse> listWorkspaces() {
+    public List<WorkspaceDto.WorkspaceResponse> listWorkspaces() {
         return repository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     // List workspaces by owner
-    public List<ApiModels.WorkspaceResponse> listWorkspacesByOwner(@NonNull String ownerId) {
+    public List<WorkspaceDto.WorkspaceResponse> listWorkspacesByOwner(@NonNull String ownerId) {
         return repository.findByOwnerId(ownerId).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     // Get workspace by id
-    public ApiModels.WorkspaceResponse getWorkspaceById(@NonNull String id) {
+    public WorkspaceDto.WorkspaceResponse getWorkspaceById(@NonNull String id) {
         Optional<Workspace> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null;
@@ -88,3 +87,5 @@ public class WorkspaceService {
         return true;
     }
 }
+
+

@@ -1,6 +1,6 @@
 // User table structure
 
-package com.continuum.api;
+package com.continuum.user;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -23,3 +23,5 @@ public class User {
     @Column(nullable = true)
     public String displayName;
 }
+
+

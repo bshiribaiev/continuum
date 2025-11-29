@@ -1,6 +1,6 @@
 // Memory table structure
 
-package com.continuum.api;
+package com.continuum.memory;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -24,3 +24,5 @@ public class Memory {
     @Column(nullable = false, length = 4000)
     public String content;
 }
+
+

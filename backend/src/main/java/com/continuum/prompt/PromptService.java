@@ -1,7 +1,9 @@
-package com.continuum.api;
+package com.continuum.prompt;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
+import com.continuum.memory.MemoryDto;
+import com.continuum.memory.MemoryService;
 
 @Service
 public class PromptService {
@@ -14,7 +16,7 @@ public class PromptService {
 
     // Build formatted prompt string from context and task
     private String buildPrompt(
-            List<ApiModels.MemoryResponse> contextMemories,
+            List<MemoryDto.MemoryResponse> contextMemories,
             String task,
             boolean includeInstructions) {
 
@@ -39,7 +41,7 @@ public class PromptService {
         } else {
             promptBuilder.append("## Context Items\n\n");
             for (int i = 0; i < contextMemories.size(); i++) {
-                ApiModels.MemoryResponse memory = contextMemories.get(i);
+                MemoryDto.MemoryResponse memory = contextMemories.get(i);
                 promptBuilder.append(String.format(
                         "%d. [source=%s] %s\n\n",
                         i + 1,
@@ -60,7 +62,7 @@ public class PromptService {
     }
 
     // Generate prompt with context
-    public ApiModels.GeneratePromptResponse generatePrompt(
+    public PromptDto.GeneratePromptResponse generatePrompt(
             String userId,
             String task,
             Integer contextLimit,
@@ -70,12 +72,14 @@ public class PromptService {
         boolean includeInstructions = includeSystemInstructions != null && includeSystemInstructions;
 
         // Get relevant context memories
-        List<ApiModels.MemoryResponse> contextMemories = memoryService.queryContext(userId, task, limit);
+        List<MemoryDto.MemoryResponse> contextMemories = memoryService.queryContext(userId, task, limit);
         String prompt = buildPrompt(contextMemories, task, includeInstructions);
 
-        ApiModels.GeneratePromptResponse responseModel = new ApiModels.GeneratePromptResponse();
+        PromptDto.GeneratePromptResponse responseModel = new PromptDto.GeneratePromptResponse();
         responseModel.prompt = prompt;
         responseModel.contextMemoriesUsed = contextMemories.size();
         return responseModel;
     }
 }
+
+

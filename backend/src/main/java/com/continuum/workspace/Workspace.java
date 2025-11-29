@@ -1,6 +1,6 @@
 // Workspace table structure
 
-package com.continuum.api;
+package com.continuum.workspace;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -34,3 +34,5 @@ public class Workspace {
         createdAt = LocalDateTime.now();
     }
 }
+
+

@@ -1,6 +1,6 @@
-// Service to handle logic of http requests of the memory endpoint
+// Service to handle logic of http requests of the user endpoint
 
-package com.continuum.api;
+package com.continuum.user;
 
 import java.util.*;
 import org.springframework.stereotype.Service;
@@ -11,14 +11,13 @@ public class UserService {
 
     private final UserRepository repository;
 
-    // Constructor
     public UserService(UserRepository repository) {
         this.repository = repository;
     }
 
     // Convert User entity into UserResponse DTO
-    private ApiModels.UserResponse toResponse(User user) {
-        ApiModels.UserResponse resp = new ApiModels.UserResponse();
+    private UserDto.UserResponse toResponse(User user) {
+        UserDto.UserResponse resp = new UserDto.UserResponse();
         resp.id = user.id;
         resp.username = user.username;
         resp.email = user.email;
@@ -27,7 +26,7 @@ public class UserService {
     }
 
     // Create a user
-    public ApiModels.UserResponse createUser(ApiModels.CreateUserRequest request) {
+    public UserDto.UserResponse createUser(UserDto.CreateUserRequest request) {
         // Check if username already exists
         if (repository.findByUsername(request.username).isPresent()) {
             throw new IllegalArgumentException("Username already exists");
@@ -49,7 +48,7 @@ public class UserService {
     }
 
     // Update a user
-    public ApiModels.UserResponse updateUser(@NonNull String id, ApiModels.CreateUserRequest request) {
+    public UserDto.UserResponse updateUser(@NonNull String id, UserDto.CreateUserRequest request) {
         Optional<User> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null; // controller will turn this into 404
@@ -80,14 +79,14 @@ public class UserService {
     }
 
     // List all users
-    public List<ApiModels.UserResponse> listUsers() {
+    public List<UserDto.UserResponse> listUsers() {
         return repository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     // Get user by id
-    public ApiModels.UserResponse getUserById(@NonNull String id) {
+    public UserDto.UserResponse getUserById(@NonNull String id) {
         Optional<User> optional = repository.findById(id);
         if (optional.isEmpty()) {
             return null;
@@ -96,7 +95,7 @@ public class UserService {
     }
 
     // Get user by username
-    public ApiModels.UserResponse getUserByUsername(@NonNull String username) {
+    public UserDto.UserResponse getUserByUsername(@NonNull String username) {
         Optional<User> optional = repository.findByUsername(username);
         if (optional.isEmpty()) {
             return null;
@@ -113,3 +112,5 @@ public class UserService {
         return true;
     }
 }
+
+
