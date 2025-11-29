@@ -22,12 +22,19 @@ public class ApiController {
     private final MemoryService memoryService;
     private final UserService userService;
     private final WorkspaceService workspaceService;
+    private final PromptService promptService;
 
     // Constructor
-    public ApiController(MemoryService memoryService, UserService userService, WorkspaceService workspaceService) {
+    public ApiController(
+        MemoryService memoryService, 
+        UserService userService, 
+        WorkspaceService workspaceService,
+        PromptService promptService) {
+
         this.memoryService = memoryService;
         this.userService = userService;
         this.workspaceService = workspaceService;
+        this.promptService = promptService;
     }
 
     // Create memory
@@ -213,5 +220,18 @@ public class ApiController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();
+    }
+
+    // Generate prompt
+    @PostMapping("api/prompts/generate")
+    public ResponseEntity<ApiModels.GeneratePromptResponse> generatePrompt(
+            @Valid @RequestBody ApiModels.GeneratePromptRequest request) {
+        ApiModels.GeneratePromptResponse res = promptService.generatePrompt(
+            request.userId,
+            request.task,
+            request.contextLimit,
+            request.includeSystemInstructions);
+
+        return ResponseEntity.ok(res);
     }
 }
