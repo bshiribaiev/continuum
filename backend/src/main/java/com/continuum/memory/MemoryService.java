@@ -22,6 +22,11 @@ public class MemoryService {
         resp.userId = memory.userId;
         resp.source = memory.source;
         resp.content = memory.content;
+        resp.type = memory.type;
+        resp.topic = memory.topic;
+        resp.tags = memory.tags;
+        resp.importance = memory.importance;
+        resp.active = memory.active;
         return resp;
     }
 
@@ -32,6 +37,27 @@ public class MemoryService {
         memory.userId = request.userId;
         memory.source = request.source;
         memory.content = request.content;
+        memory.type = (request.type == null || request.type.isBlank()) ? "OTHER" : request.type;
+        memory.topic = request.topic;
+        memory.tags = request.tags;
+        memory.importance = request.importance;
+
+        // If this is a PREFERENCE with a topic, mark older preferences for the same
+        // user+topic as inactive and superseded.
+        if ("PREFERENCE".equalsIgnoreCase(memory.type) && memory.topic != null && !memory.topic.isBlank()) {
+            List<Memory> existingPrefs = repository.findByUserId(request.userId).stream()
+                    .filter(m -> m.type != null
+                            && "PREFERENCE".equalsIgnoreCase(m.type)
+                            && Objects.equals(m.topic, memory.topic)
+                            && m.active)
+                    .toList();
+
+            for (Memory old : existingPrefs) {
+                old.active = false;
+                old.supersededById = memory.id;
+                repository.save(old);
+            }
+        }
 
         Memory saved = repository.save(memory);
         return toResponse(saved);
@@ -80,7 +106,14 @@ public class MemoryService {
                 .sorted((a, b) -> {
                     int scoreA = score(a.content, terms);
                     int scoreB = score(b.content, terms);
-                    return Integer.compare(scoreB, scoreA);
+                    if (scoreA != scoreB) {
+                        return Integer.compare(scoreB, scoreA); // higher score first
+                    }
+                    // tie‑break by recency (newer first)
+                    if (a.createdAt == null || b.createdAt == null) {
+                        return 0;
+                    }
+                    return b.createdAt.compareTo(a.createdAt);
                 })
                 .limit(limit)
                 .map(this::toResponse)
@@ -121,5 +154,3 @@ public class MemoryService {
         return true;
     }
 }
-
-

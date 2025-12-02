@@ -81,6 +81,10 @@ public class MemoryController {
         memoryRequest.userId = request.userId;
         memoryRequest.source = request.source;
         memoryRequest.content = request.text;
+        memoryRequest.type = request.type;
+        memoryRequest.topic = request.topic;
+        memoryRequest.tags = request.tags;
+        memoryRequest.importance = request.importance;
 
         MemoryDto.MemoryResponse resp = memoryService.createMemory(memoryRequest);
         return new ResponseEntity<>(resp, HttpStatus.CREATED);

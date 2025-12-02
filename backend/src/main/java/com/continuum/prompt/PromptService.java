@@ -39,15 +39,67 @@ public class PromptService {
         if (contextMemories == null || contextMemories.isEmpty()) {
             promptBuilder.append("No prior context was found for this user. Use only the TASK below.\n\n");
         } else {
-            promptBuilder.append("## Context Items\n\n");
-            for (int i = 0; i < contextMemories.size(); i++) {
-                MemoryDto.MemoryResponse memory = contextMemories.get(i);
-                promptBuilder.append(String.format(
-                        "%d. [source=%s] %s\n\n",
-                        i + 1,
-                        memory.source,
-                        memory.content));
-            }
+            // Partition memories by semantic type
+            List<MemoryDto.MemoryResponse> preferences = contextMemories.stream()
+                    .filter(m -> "PREFERENCE".equalsIgnoreCase(m.type))
+                    .toList();
+
+            List<MemoryDto.MemoryResponse> goals = contextMemories.stream()
+                    .filter(m -> "GOAL".equalsIgnoreCase(m.type))
+                    .toList();
+
+            List<MemoryDto.MemoryResponse> tasks = contextMemories.stream()
+                    .filter(m -> "TASK".equalsIgnoreCase(m.type))
+                    .toList();
+
+            List<MemoryDto.MemoryResponse> decisions = contextMemories.stream()
+                    .filter(m -> "DECISION".equalsIgnoreCase(m.type)
+                            || "CONSTRAINT".equalsIgnoreCase(m.type))
+                    .toList();
+
+            List<MemoryDto.MemoryResponse> facts = contextMemories.stream()
+                    .filter(m -> m.type == null
+                            || (!"PREFERENCE".equalsIgnoreCase(m.type)
+                                    && !"GOAL".equalsIgnoreCase(m.type)
+                                    && !"TASK".equalsIgnoreCase(m.type)
+                                    && !"DECISION".equalsIgnoreCase(m.type)
+                                    && !"CONSTRAINT".equalsIgnoreCase(m.type)))
+                    .toList();
+
+            // Helper to render a section
+            java.util.function.BiConsumer<String, List<MemoryDto.MemoryResponse>> renderSection = (title, list) -> {
+                if (list == null || list.isEmpty()) {
+                    return;
+                }
+                promptBuilder.append("## ").append(title).append("\n\n");
+                int index = 1;
+                for (MemoryDto.MemoryResponse memory : list) {
+                    if (!memory.active) {
+                        continue; // skip inactive / superseded memories
+                    }
+                    promptBuilder.append(String.format(
+                            "%d. [source=%s",
+                            index++,
+                            memory.source));
+                    if (memory.topic != null && !memory.topic.isBlank()) {
+                        promptBuilder.append(", topic=").append(memory.topic);
+                    }
+                    if (memory.importance != null) {
+                        promptBuilder.append(", importance=").append(memory.importance);
+                    }
+                    if (memory.tags != null && !memory.tags.isBlank()) {
+                        promptBuilder.append(", tags=").append(memory.tags);
+                    }
+                    promptBuilder.append("] ");
+                    promptBuilder.append(memory.content).append("\n\n");
+                }
+            };
+
+            renderSection.accept("User Preferences", preferences);
+            renderSection.accept("Current Goals", goals);
+            renderSection.accept("Active Tasks", tasks);
+            renderSection.accept("Important Decisions / Constraints", decisions);
+            renderSection.accept("Other Relevant Facts", facts);
         }
 
         promptBuilder.append("===== CONTEXT END =====\n\n");
@@ -81,5 +133,3 @@ public class PromptService {
         return responseModel;
     }
 }
-
-

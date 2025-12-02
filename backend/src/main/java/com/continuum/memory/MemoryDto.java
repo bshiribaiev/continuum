@@ -15,6 +15,19 @@ public class MemoryDto {
 
         @NotBlank
         public String content;
+
+        // Optional semantic fields
+        // e.g. "PREFERENCE", "GOAL", "TASK", "DECISION", "FACT", "CONSTRAINT"
+        public String type;
+
+        // Optional topic key (e.g. "tone", "language")
+        public String topic;
+
+        // Optional comma-separated tags (e.g. "coding,python")
+        public String tags;
+
+        // Optional importance from 1 (low) to 5 (high)
+        public Integer importance;
     }
 
     // Request model for ingesting a raw message that will become a memory
@@ -27,6 +40,12 @@ public class MemoryDto {
 
         @NotBlank
         public String text;
+
+        // Optional semantic fields when ingesting directly from a client
+        public String type;
+        public String topic;
+        public String tags;
+        public Integer importance;
     }
 
     // Request model for querying context (memories) for a user + task/query
@@ -47,6 +66,13 @@ public class MemoryDto {
         public String userId;
         public String source;
         public String content;
+
+        // Semantic metadata
+        public String type;
+        public String topic;
+        public String tags;
+        public Integer importance;
+        public boolean active;
     }
 
     // Response model for context query
