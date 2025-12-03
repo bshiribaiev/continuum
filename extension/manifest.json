@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "Continuum Context for ChatGPT",
+    "version": "0.1.0",
+    "permissions": ["scripting", "storage"],
+    "host_permissions": ["http://localhost:8080/*"],
+    "content_scripts": [
+      {
+        "matches": [
+          "https://chat.openai.com/*",
+          "https://chatgpt.com/*"
+        ],
+        "js": ["content.js"],
+        "run_at": "document_idle",
+        "all_frames": true
+      }
+    ]
+  }
