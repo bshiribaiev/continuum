@@ -1,5 +1,6 @@
 const BACKEND_URL = "http://localhost:8080";
 const USER_ID_KEY = "continuumUserId";
+let lastIngestedText = null; // simple guard to avoid duplicate task memories
 console.log("[Continuum] content script loaded");
 
 // Ensure we have a stable userId for this browser
@@ -33,20 +34,26 @@ async function transformPrompt(rawText) {
     console.log("[Continuum] transformPrompt called with:", rawText);
     const userId = await getUserId();
 
-    // 1) Ingest the message as a TASK
-    await fetch(`${BACKEND_URL}/api/ingestion/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        userId,
-        source: "chatgpt_extension",
-        text: rawText,
-        type: "TASK",
-        topic: "chat",
-        tags: null,
-        importance: 3
-        })
-    });
+    // 1) Ingest the message as a TASK (skip if it's identical to the last one we stored)
+    if (rawText !== lastIngestedText) {
+      console.log("[Continuum] ingesting new task memory");
+      await fetch(`${BACKEND_URL}/api/ingestion/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+          userId,
+          source: "chatgpt_extension",
+          text: rawText,
+          type: "TASK",
+          topic: "chat",
+          tags: null,
+          importance: 3
+          })
+      });
+      lastIngestedText = rawText;
+    } else {
+      console.log("[Continuum] skipping ingestion for duplicate task text");
+    }
 
     // 2) Generate woven prompt
     const resp = await fetch(`${BACKEND_URL}/api/prompts/generate`, {
@@ -65,95 +72,118 @@ async function transformPrompt(rawText) {
 }
 
 function hookChatGPT() {
-    console.log("[Continuum] hookChatGPT running");
-  
-    document.addEventListener(
-      "keydown",
-      (e) => {
-        console.log("[Continuum] keydown:", e.key, "target:", e.target);
-      },
-      true // capture phase
-    );
-    
-    document.addEventListener("click", (e) => {
-        const btn = e.target.closest('button[data-testid="send-button"], #composer-submit-button');
-        if (!btn) return;
-        console.log("[Continuum] send button click detected");
-        e.preventDefault();
-        handleSend("click");
-      });
-    console.log("[Continuum] Input hooks attached");
-  
-    let busy = false;
-  
-    async function handleSend(source) {
-      if (busy) return;
-      busy = true;
-      try {
-        // Try to find the main input each time
-        const textarea =
-          document.querySelector("textarea") ||
-          document.querySelector('div[contenteditable="true"]');
-  
-        if (!textarea) {
-          console.warn("[Continuum] No input element found");
-          busy = false;
-          return;
-        }
-  
-        const isTextarea = textarea.tagName && textarea.tagName.toLowerCase() === "textarea";
-        const original = (isTextarea ? textarea.value : textarea.textContent).trim();
-  
-        if (!original) {
-          busy = false;
-          return;
-        }
-  
-        console.log("[Continuum] handleSend from", source, "with:", original);
-  
-        const woven = await transformPrompt(original);
-  
-        // Replace user text with woven prompt
-        if (isTextarea) {
-          textarea.value = woven;
-        } else {
-          textarea.textContent = woven;
-        }
-  
-        // Click ChatGPT's send button
-        const sendButton =
-          document.querySelector('button[data-testid="send-button"]') ||
-          document.querySelector("#composer-submit-button");
-  
-        if (sendButton) {
-          sendButton.click();
-        } else {
-          console.warn("[Continuum] No send button found; cannot auto-send.");
-        }
-      } catch (err) {
-        console.error("[Continuum] error in handleSend:", err);
-      } finally {
+  console.log("[Continuum] hookChatGPT running");
+
+  let busy = false;
+  let readyToSend = false; // after transform, let the next send through
+
+  async function handleSend(source) {
+    if (busy) return;
+    busy = true;
+    try {
+      // Always re-query the current input
+      const textarea =
+        document.querySelector("#prompt-textarea") || // main ChatGPT input
+        document.querySelector("textarea") ||
+        document.querySelector('div[contenteditable="true"]');
+
+      if (!textarea) {
+        console.warn("[Continuum] No input element found");
         busy = false;
+        return;
       }
+
+      const isTextarea = textarea.tagName && textarea.tagName.toLowerCase() === "textarea";
+      const original = (isTextarea ? textarea.value : textarea.textContent).trim();
+      if (!original) {
+        busy = false;
+        return;
+      }
+
+      console.log("[Continuum] handleSend from", source, "with:", original);
+
+      const woven = await transformPrompt(original);
+
+      // Replace user text with woven prompt
+      if (isTextarea) {
+        textarea.value = woven;
+      } else {
+        textarea.textContent = woven;
+      }
+      
+      // Notify React/ProseMirror that the content changed
+      try {
+        const inputEvent =
+          typeof InputEvent === "function"
+            ? new InputEvent("input", { bubbles: true, cancelable: true })
+            : new Event("input", { bubbles: true, cancelable: true });
+
+        textarea.dispatchEvent(inputEvent);
+        console.log("[Continuum] dispatched input event");
+      } catch (e) {
+        console.warn("[Continuum] failed to dispatch input event:", e);
+      }
+
+      // Give React a moment to process the input event and update its state
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      console.log("[Continuum] prompt transformed, ready to send");
+      readyToSend = true; // next Enter/click will send without re-transforming
+    } catch (err) {
+      console.error("[Continuum] error in handleSend:", err);
+    } finally {
+      busy = false;
     }
-  
-    // Intercept ANY Enter (no Shift) on the page for now
-    document.addEventListener("keydown", (e) => {
+  }
+
+  // Intercept ANY Enter (no Shift) on the page (capture)
+  document.addEventListener(
+    "keydown",
+    (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
+        // If already transformed, let it send
+        if (readyToSend) {
+          console.log("[Continuum] Enter: sending transformed prompt");
+          readyToSend = false;
+          return; // let the event through
+        }
+        console.log("[Continuum] Enter detected, calling handleSend");
         e.preventDefault();
         handleSend("keydown");
       }
-    });
-  
-    // Intercept clicks on the send button
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest('button[data-testid="send-button"], #composer-submit-button');
+    },
+    true
+  );
+
+  // Intercept pointerdown on the send button (capture) - fires BEFORE click
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      const btn = e.target.closest(
+        'button[data-testid="send-button"], #composer-submit-button'
+      );
       if (!btn) return;
+
+      // If already transformed, let it send
+      if (readyToSend) {
+        console.log("[Continuum] pointerdown: sending transformed prompt");
+        readyToSend = false;
+        return; // let the event through
+      }
+
+      console.log("[Continuum] send button pointerdown detected");
+
+      // Prevent ChatGPT's own handlers from sending the original prompt
       e.preventDefault();
-      handleSend("click");
-    });
-  
-    console.log("[Continuum] Input hooks attached");
-  }
+      e.stopImmediatePropagation();
+
+      // Transform the prompt (don't auto-send)
+      handleSend("pointerdown");
+    },
+    true
+  );
+
+  console.log("[Continuum] Input hooks attached");
+}
 // Wait a bit for ChatGPT UI to render
 setTimeout(hookChatGPT, 2000);
