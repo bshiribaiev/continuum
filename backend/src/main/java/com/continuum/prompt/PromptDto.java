@@ -9,6 +9,9 @@ public class PromptDto {
         @NotBlank
         public String userId;
 
+        // Optional workspace/project to scope the context search
+        public String workspaceId;
+
         @NotBlank
         public String task;
 
@@ -25,5 +28,3 @@ public class PromptDto {
         public int contextMemoriesUsed;
     }
 }
-
-

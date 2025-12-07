@@ -21,6 +21,7 @@ public class PromptController {
             @Valid @RequestBody PromptDto.GeneratePromptRequest request) {
         PromptDto.GeneratePromptResponse res = promptService.generatePrompt(
                 request.userId,
+                request.workspaceId,
                 request.task,
                 request.contextLimit,
                 request.includeSystemInstructions);
@@ -28,5 +29,3 @@ public class PromptController {
         return ResponseEntity.ok(res);
     }
 }
-
-

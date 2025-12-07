@@ -1,5 +1,6 @@
 const BACKEND_URL = "http://localhost:8080";
 const USER_ID_KEY = "continuumUserId";
+const WORKSPACE_ID_KEY = "continuumWorkspaceId";
 let lastIngestedText = null; // simple guard to avoid duplicate task memories
 console.log("[Continuum] content script loaded");
 
@@ -30,42 +31,84 @@ async function getUserId() {
   });
 }
 
-async function transformPrompt(rawText) {
-    console.log("[Continuum] transformPrompt called with:", rawText);
-    const userId = await getUserId();
+// Ensure we have a stable workspace/project for this user (scopes context)
+async function getWorkspaceId(userId) {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get([WORKSPACE_ID_KEY], async (result) => {
+      if (result[WORKSPACE_ID_KEY]) {
+        resolve(result[WORKSPACE_ID_KEY]);
+        return;
+      }
 
-    // 1) Ingest the message as a TASK (skip if it's identical to the last one we stored)
-    if (rawText !== lastIngestedText) {
-      console.log("[Continuum] ingesting new task memory");
-      await fetch(`${BACKEND_URL}/api/ingestion/messages`, {
+      try {
+        const resp = await fetch(`${BACKEND_URL}/api/workspaces`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-          userId,
-          source: "chatgpt_extension",
-          text: rawText,
-          type: "TASK",
-          topic: "chat",
-          tags: null,
-          importance: 3
-          })
-      });
-      lastIngestedText = rawText;
-    } else {
-      console.log("[Continuum] skipping ingestion for duplicate task text");
-    }
-
-    // 2) Generate woven prompt
-    const resp = await fetch(`${BACKEND_URL}/api/prompts/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        userId,
-        task: rawText,
-        contextLimit: 10,
-        includeSystemInstructions: true
-        })
+            name: "ChatGPT Project",
+            ownerId: userId,
+            description: "Default project created by the ChatGPT extension",
+          }),
+        });
+        const data = await resp.json();
+        const workspaceId = data.id;
+        chrome.storage.sync.set({ [WORKSPACE_ID_KEY]: workspaceId }, () =>
+          resolve(workspaceId)
+        );
+      } catch (e) {
+        console.error("[Continuum] failed to create workspace", e);
+        resolve(null);
+      }
     });
+  });
+}
+
+async function transformPrompt(rawText) {
+  console.log("[Continuum] transformPrompt called with:", rawText);
+  const userId = await getUserId();
+  const workspaceId = await getWorkspaceId(userId);
+
+  // Detect if this already looks like a woven Continuum prompt
+  const looksLikeWovenPrompt =
+    rawText.includes("===== CONTEXT START =====") ||
+    rawText.includes("You are an AI assistant that uses a persistent memory layer (Continuum)");
+
+  if (looksLikeWovenPrompt) {
+    console.log("[Continuum] skipping ingestion; text already looks like woven prompt");
+  } 
+  else if (rawText !== lastIngestedText) {
+    console.log("[Continuum] ingesting new task memory");
+    await fetch(`${BACKEND_URL}/api/ingestion/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        workspaceId,
+        source: "chatgpt_extension",
+        text: rawText,
+        type: "TASK",
+        topic: "chat",
+        tags: null,
+        importance: 3,
+      }),
+    });
+    lastIngestedText = rawText;
+  } else {
+    console.log("[Continuum] skipping ingestion for duplicate task text");
+  }
+
+  // 2) Generate woven prompt
+  const resp = await fetch(`${BACKEND_URL}/api/prompts/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId,
+      workspaceId,
+      task: rawText,
+      contextLimit: 10,
+      includeSystemInstructions: true,
+    }),
+  });
 
   const data = await resp.json();
   return data.prompt || rawText;

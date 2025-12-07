@@ -79,6 +79,7 @@ public class MemoryController {
 
         MemoryDto.CreateMemoryRequest memoryRequest = new MemoryDto.CreateMemoryRequest();
         memoryRequest.userId = request.userId;
+        memoryRequest.workspaceId = request.workspaceId;
         memoryRequest.source = request.source;
         memoryRequest.content = request.text;
         memoryRequest.type = request.type;
@@ -98,6 +99,7 @@ public class MemoryController {
         int limit = (request.limit == null || request.limit <= 0) ? 5 : request.limit;
         List<MemoryDto.MemoryResponse> results = memoryService.queryContext(
                 request.userId,
+                request.workspaceId,
                 request.query,
                 limit);
 

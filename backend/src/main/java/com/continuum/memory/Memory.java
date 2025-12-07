@@ -21,6 +21,10 @@ public class Memory {
     @Column(nullable = false)
     public String userId;
 
+    // Optional workspace/project this memory belongs to
+    @Column(nullable = true)
+    public String workspaceId;
+
     @Column(nullable = false)
     public String source;
 

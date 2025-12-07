@@ -23,15 +23,11 @@ public class PromptService {
         StringBuilder promptBuilder = new StringBuilder();
 
         if (includeInstructions) {
+            // Short, direct system-style instructions
             promptBuilder
-                    .append("You are an AI assistant that uses a persistent memory layer (Continuum) to stay\n")
-                    .append("consistent with the user's goals, preferences, decisions, and history.\n\n")
-                    .append("Guidelines:\n")
-                    .append("1. Read the CONTEXT section before answering the TASK.\n")
-                    .append("2. Prefer the user's stated preferences and past decisions over generic defaults.\n")
-                    .append("3. If context conflicts, favor the most recent or explicitly corrective items.\n")
-                    .append("4. If information is missing, say so rather than guessing.\n")
-                    .append("5. Do not repeat the entire context verbatim; reference it succinctly.\n\n");
+                    .append(
+                            "You are an AI assistant. Use the CONTEXT section as the user's long-term memory (goals, preferences, history).\n")
+                    .append("Read CONTEXT first, then answer TASK. Prefer recent or explicitly corrective items when there is conflict.\n\n");
         }
 
         promptBuilder.append("===== CONTEXT START =====\n\n");
@@ -51,6 +47,8 @@ public class PromptService {
             List<MemoryDto.MemoryResponse> tasks = contextMemories.stream()
                     .filter(m -> "TASK".equalsIgnoreCase(m.type))
                     .toList();
+            // De-duplicate tasks by normalized content so we don't repeat the same wording
+            tasks = dedupeByContent(tasks);
 
             List<MemoryDto.MemoryResponse> decisions = contextMemories.stream()
                     .filter(m -> "DECISION".equalsIgnoreCase(m.type)
@@ -66,7 +64,17 @@ public class PromptService {
                                     && !"CONSTRAINT".equalsIgnoreCase(m.type)))
                     .toList();
 
-            // Helper to render a section
+            // Helper to detect "bad" memories that already contain full woven prompts
+            java.util.function.Predicate<MemoryDto.MemoryResponse> isWovenPromptMemory = m -> {
+                if (m == null || m.content == null) {
+                    return false;
+                }
+                String c = m.content;
+                return c.contains("===== CONTEXT START =====")
+                        || c.contains("You are an AI assistant that uses a persistent memory layer (Continuum)");
+            };
+
+            // Helper to render a section in a compact, LLM-friendly way
             java.util.function.BiConsumer<String, List<MemoryDto.MemoryResponse>> renderSection = (title, list) -> {
                 if (list == null || list.isEmpty()) {
                     return;
@@ -77,27 +85,39 @@ public class PromptService {
                     if (!memory.active) {
                         continue; // skip inactive / superseded memories
                     }
-                    promptBuilder.append(String.format(
-                            "%d. [source=%s",
-                            index++,
-                            memory.source));
-                    if (memory.topic != null && !memory.topic.isBlank()) {
-                        promptBuilder.append(", topic=").append(memory.topic);
+                    if (isWovenPromptMemory.test(memory)) {
+                        continue; // skip memories that already contain full woven prompts
                     }
-                    if (memory.importance != null) {
-                        promptBuilder.append(", importance=").append(memory.importance);
+
+                    promptBuilder.append(index++).append(". ");
+                    promptBuilder.append(memory.content);
+
+                    // Only surface metadata that materially helps the model.
+                    StringBuilder meta = new StringBuilder();
+                    if (memory.importance != null && memory.importance >= 4) {
+                        if (meta.length() > 0) {
+                            meta.append(", ");
+                        }
+                        meta.append("importance: ").append(memory.importance);
                     }
                     if (memory.tags != null && !memory.tags.isBlank()) {
-                        promptBuilder.append(", tags=").append(memory.tags);
+                        if (meta.length() > 0) {
+                            meta.append(", ");
+                        }
+                        meta.append("tags: ").append(memory.tags);
                     }
-                    promptBuilder.append("] ");
-                    promptBuilder.append(memory.content).append("\n\n");
+
+                    if (meta.length() > 0) {
+                        promptBuilder.append(" (").append(meta).append(")");
+                    }
+
+                    promptBuilder.append("\n\n");
                 }
             };
 
             renderSection.accept("User Preferences", preferences);
             renderSection.accept("Current Goals", goals);
-            renderSection.accept("Active Tasks", tasks);
+            renderSection.accept("Recent Prompts", tasks);
             renderSection.accept("Important Decisions / Constraints", decisions);
             renderSection.accept("Other Relevant Facts", facts);
         }
@@ -113,9 +133,29 @@ public class PromptService {
         return promptBuilder.toString();
     }
 
+    // De-duplicate memories by normalized content, preserving order of first
+    // occurrence
+    private List<MemoryDto.MemoryResponse> dedupeByContent(List<MemoryDto.MemoryResponse> memories) {
+        if (memories == null || memories.isEmpty()) {
+            return memories;
+        }
+        java.util.Map<String, MemoryDto.MemoryResponse> byContent = new java.util.LinkedHashMap<>();
+        for (MemoryDto.MemoryResponse memory : memories) {
+            if (memory == null || memory.content == null) {
+                continue;
+            }
+            String key = memory.content.trim().toLowerCase();
+            if (!byContent.containsKey(key)) {
+                byContent.put(key, memory);
+            }
+        }
+        return java.util.List.copyOf(byContent.values());
+    }
+
     // Generate prompt with context
     public PromptDto.GeneratePromptResponse generatePrompt(
             String userId,
+            String workspaceId,
             String task,
             Integer contextLimit,
             Boolean includeSystemInstructions) {
@@ -124,7 +164,7 @@ public class PromptService {
         boolean includeInstructions = includeSystemInstructions != null && includeSystemInstructions;
 
         // Get relevant context memories
-        List<MemoryDto.MemoryResponse> contextMemories = memoryService.queryContext(userId, task, limit);
+        List<MemoryDto.MemoryResponse> contextMemories = memoryService.queryContext(userId, workspaceId, task, limit);
         String prompt = buildPrompt(contextMemories, task, includeInstructions);
 
         PromptDto.GeneratePromptResponse responseModel = new PromptDto.GeneratePromptResponse();

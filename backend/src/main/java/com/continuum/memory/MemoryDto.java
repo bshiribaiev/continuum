@@ -10,6 +10,9 @@ public class MemoryDto {
         @NotBlank
         public String userId;
 
+        // Optional workspace/project this memory is associated with
+        public String workspaceId;
+
         @NotBlank
         public String source;
 
@@ -35,6 +38,9 @@ public class MemoryDto {
         @NotBlank
         public String userId;
 
+        // Optional workspace/project for this ingested message
+        public String workspaceId;
+
         @NotBlank
         public String source;
 
@@ -53,6 +59,10 @@ public class MemoryDto {
         @NotBlank
         public String userId;
 
+        // Optional workspace/project to scope the query. If null, all workspaces for
+        // the user.
+        public String workspaceId;
+
         @NotBlank
         public String query;
 
@@ -64,6 +74,7 @@ public class MemoryDto {
     public static class MemoryResponse {
         public String id;
         public String userId;
+        public String workspaceId;
         public String source;
         public String content;
 

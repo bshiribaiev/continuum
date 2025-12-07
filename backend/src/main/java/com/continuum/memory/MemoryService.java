@@ -20,6 +20,7 @@ public class MemoryService {
         MemoryDto.MemoryResponse resp = new MemoryDto.MemoryResponse();
         resp.id = memory.id;
         resp.userId = memory.userId;
+        resp.workspaceId = memory.workspaceId;
         resp.source = memory.source;
         resp.content = memory.content;
         resp.type = memory.type;
@@ -35,6 +36,7 @@ public class MemoryService {
         Memory memory = new Memory();
         memory.id = UUID.randomUUID().toString();
         memory.userId = request.userId;
+        memory.workspaceId = request.workspaceId;
         memory.source = request.source;
         memory.content = request.content;
         memory.type = (request.type == null || request.type.isBlank()) ? "OTHER" : request.type;
@@ -49,6 +51,7 @@ public class MemoryService {
                     .filter(m -> m.type != null
                             && "PREFERENCE".equalsIgnoreCase(m.type)
                             && Objects.equals(m.topic, memory.topic)
+                            && Objects.equals(m.workspaceId, memory.workspaceId)
                             && m.active)
                     .toList();
 
@@ -94,13 +97,19 @@ public class MemoryService {
                 .toList();
     }
 
-    // Query memories for a user based on a simple text query, later this will call
-    // vector/graph search
-    public List<MemoryDto.MemoryResponse> queryContext(String userId, String query, int limit) {
+    // Query memories for a user (optionally scoped to a workspace) based on a
+    // simple
+    // text query. Later this will call vector/graph search.
+    public List<MemoryDto.MemoryResponse> queryContext(String userId, String workspaceId, String query, int limit) {
         String normalizedQuery = query.toLowerCase();
         String[] terms = normalizedQuery.split("\\s+");
 
-        List<Memory> userMemories = repository.findByUserId(userId);
+        List<Memory> userMemories;
+        if (workspaceId != null && !workspaceId.isBlank()) {
+            userMemories = repository.findByUserIdAndWorkspaceId(userId, workspaceId);
+        } else {
+            userMemories = repository.findByUserId(userId);
+        }
 
         return userMemories.stream()
                 .sorted((a, b) -> {
