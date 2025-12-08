@@ -1,0 +1,244 @@
+text,type
+"Can you refactor this Python function to make it more readable?",TASK
+"Rewrite this snippet so it works in Node 18 without any external libraries.",TASK
+"Explain how memoization works using a simple JavaScript example.",TASK
+"Debug this: my React component keeps re-rendering endlessly.",TASK
+"Generate a Bash script that backs up my project folder every night.",TASK
+"Summarize this article about distributed systems in plain language.",TASK
+"Turn this paragraph into concise bullet points for my notes.",TASK
+"Help me design a folder structure for a medium-sized Next.js app.",TASK
+"Write a SQL query that returns the top 10 most active users.",TASK
+"Show me how to implement JWT authentication from scratch.",TASK
+"Convert this Python list comprehension into a standard loop.",TASK
+"Fix my Dockerfile—it's not bundling dependencies correctly.",TASK
+"Transform this JSON into a TypeScript interface for me.",TASK
+"Break this long function into smaller reusable pieces.",TASK
+"Create a minimal Flask API example with two endpoints.",TASK
+"Give me practice problems for learning recursion.",TASK
+"Help me write a test suite for this small library.",TASK
+"Can you make a cheat sheet for Rust ownership rules?",TASK
+"Rewrite this CLI tool in Go instead of Python.",TASK
+"Make this error message clearer and more helpful.",TASK
+"Draft a README for this GitHub project.",TASK
+"Turn this pseudocode into working JavaScript.",TASK
+"Convert this synchronous function to async/await.",TASK
+"Walk me through designing a queuing system.",TASK
+"Improve the performance of this SQL query.",TASK
+"Rewrite this explanation so a beginner can understand it.",TASK
+"Build a small mock API server using Express.",TASK
+"Can you outline the steps for implementing OAuth?",TASK
+"Make a template for daily project planning.",TASK
+"Implement a debounce utility in plain JavaScript.",TASK
+"Teach me how to structure a clean architecture service.",TASK
+"Generate dummy data for my test database.",TASK
+"Translate this block of code into Kotlin.",TASK
+"Give me a mental model for understanding promises.",TASK
+"Rewrite this error log so I can better troubleshoot.",TASK
+"Show me how to containerize this script with Docker.",TASK
+"Clean up this Markdown document formatting.",TASK
+"Help me choose a hashing algorithm and explain why.",TASK
+"Make a quick-start guide for launching a Python app.",TASK
+
+"I prefer when you keep explanations short unless I ask otherwise.",PREFERENCE
+"Please always show code comments in your examples.",PREFERENCE
+"Try to keep your answers in bullet points when possible.",PREFERENCE
+"I like responses that include practical examples, not theory.",PREFERENCE
+"From now on, keep everything in a friendly teaching tone.",PREFERENCE
+"When explaining concepts, start from the basics first.",PREFERENCE
+"Please answer as if you're mentoring a junior dev.",PREFERENCE
+"I’d rather not see super formal academic terms unless necessary.",PREFERENCE
+"Whenever you give a code snippet, include test cases too.",PREFERENCE
+"Keep the language simple—avoid jargon when possible.",PREFERENCE
+"I prefer Markdown formatting for all technical answers.",PREFERENCE
+"Please be concise with definitions but detailed with examples.",PREFERENCE
+"Use diagrams only when they add real clarity.",PREFERENCE
+"If possible, avoid using third-party libraries in examples.",PREFERENCE
+"Try to maintain consistent naming conventions in generated code.",PREFERENCE
+"Please always include the reasoning behind your suggestions.",PREFERENCE
+"I like having multiple solution options to compare.",PREFERENCE
+"Respond in a step-by-step style unless told otherwise.",PREFERENCE
+"Whenever possible, offer simpler alternative approaches.",PREFERENCE
+"Try not to rewrite my code style unless I ask.",PREFERENCE
+"Keep follow-up questions minimal; focus on output.",PREFERENCE
+"Don’t assume too much background knowledge when I ask for help.",PREFERENCE
+"Give examples that run on macOS by default.",PREFERENCE
+"Please avoid overly complex one-liners.",PREFERENCE
+"I prefer answers that highlight trade-offs explicitly.",PREFERENCE
+"Use plain English summaries at the top of explanations.",PREFERENCE
+"Stick to vanilla JavaScript for demos, unless needed.",PREFERENCE
+"From now on, explain acronyms the first time they appear.",PREFERENCE
+"I’d like responses formatted like mini-tutorials.",PREFERENCE
+"When generating SQL, default to PostgreSQL syntax.",PREFERENCE
+"Please keep your tone encouraging and supportive.",PREFERENCE
+"I prefer examples in TypeScript rather than JavaScript.",PREFERENCE
+"Try to keep commands compatible with Ubuntu.",PREFERENCE
+"Use emojis sparingly—they distract me.",PREFERENCE
+"Please expand on reasoning whenever recommending tools.",PREFERENCE
+"Don’t use long paragraphs; break them up.",PREFERENCE
+"Try to avoid unnecessary abstractions in code.",PREFERENCE
+"Always highlight common pitfalls when teaching a concept.",PREFERENCE
+"I’d like more visual metaphors in explanations.",PREFERENCE
+"Starting now, keep solutions deterministic and reproducible.",PREFERENCE
+
+"My goal is to build a portfolio-worthy full-stack project.",GOAL
+"I want to eventually automate most of my weekly workflows.",GOAL
+"I'm trying to become a solid mid-level engineer this year.",GOAL
+"My long-term aim is to understand system design deeply.",GOAL
+"I want to create an AI-powered productivity dashboard.",GOAL
+"My goal is to master TypeScript over the next few months.",GOAL
+"I’m aiming to build a serious study routine using spaced repetition.",GOAL
+"I want to release a SaaS tool by the end of the year.",GOAL
+"I'm working toward switching from frontend to full-stack.",GOAL
+"My objective is to learn distributed systems step by step.",GOAL
+"I want to build a tiny game engine to understand rendering.",GOAL
+"My aim is to develop a consistent learning schedule.",GOAL
+"I want to get comfortable with cloud deployments.",GOAL
+"I’m hoping to create a reusable component library.",GOAL
+"My goal is to build a habit of documenting everything.",GOAL
+"I want to get good enough at Rust to write CLI tools.",GOAL
+"I'm working on becoming more confident with SQL analysis.",GOAL
+"My long-term goal is to understand machine learning fundamentals.",GOAL
+"I want to design a clean architecture template I can reuse.",GOAL
+"My aim is to finally learn Docker properly.",GOAL
+"I want to improve my ability to estimate project timelines.",GOAL
+"I’m trying to prepare for technical interviews gradually.",GOAL
+"My main objective is writing maintainable code consistently.",GOAL
+"I want to minimize context switching in my workflow.",GOAL
+"I'm aiming to build a custom task manager with AI features.",GOAL
+"I want to learn backend fundamentals from scratch.",GOAL
+"My goal is to eventually create a developer YouTube channel.",GOAL
+"I want to bring more automation into my personal projects.",GOAL
+"I’m working toward building a small AI assistant for coding.",GOAL
+"I want to get comfortable reading open-source codebases.",GOAL
+"My objective is to build a searchable knowledge base for myself.",GOAL
+"I want to create a stable system for tracking my progress.",GOAL
+"I’m aiming to master clean code principles.",GOAL
+"My goal is to improve my analytical thinking through coding.",GOAL
+"I want to learn how to architect scalable web apps.",GOAL
+"I’m working toward using AI as a serious learning companion.",GOAL
+"I want to build a note-taking workflow that compounds over time.",GOAL
+"My objective is to ship small projects regularly.",GOAL
+"I want to generate passive income through small tools.",GOAL
+"My aim is to build a personal research environment.",GOAL
+
+"Let’s stick with Next.js for the frontend.",DECISION
+"Okay, I’ve decided we should use SQLite for now.",DECISION
+"Let's not add TypeScript yet—too much overhead.",DECISION
+"We'll deploy this version on Vercel.",DECISION
+"I think we should move everything into a monorepo.",DECISION
+"Let's switch from Firebase to Supabase.",DECISION
+"Use Tailwind instead of plain CSS for this project.",DECISION
+"For now, we’ll avoid Redux and try Zustand.",DECISION
+"I want to drop Docker for local development.",DECISION
+"Let’s go with pnpm instead of npm.",DECISION
+"Use Prisma for the database layer.",DECISION
+"I’ve decided the API should be REST, not GraphQL.",DECISION
+"Let's structure the backend around FastAPI.",DECISION
+"We’ll run everything on Ubuntu for consistency.",DECISION
+"Let’s cap the bundle size under 200kb.",DECISION
+"Use Jest instead of Vitest for now.",DECISION
+"I think we should move to ES modules.",DECISION
+"Let’s keep the UI minimal—no complex animations.",DECISION
+"Let's avoid external APIs until MVP is stable.",DECISION
+"We’re dropping server-side rendering for now.",DECISION
+"I’m choosing PostgreSQL over MySQL.",DECISION
+"Let’s use GitHub Actions for CI.",DECISION
+"Go with a dark theme as the default.",DECISION
+"We’ll keep routing file-based for simplicity.",DECISION
+"Let's avoid introducing microservices yet.",DECISION
+"I want to consolidate everything into a single repo.",DECISION
+"We’re disabling WebSockets until later.",DECISION
+"Use Docker Compose for the dev environment.",DECISION
+"Let’s drop support for Safari temporarily.",DECISION
+"I’ve decided this script will run hourly, not daily.",DECISION
+"We’ll treat everything as stateless services.",DECISION
+"Let’s stick with Python 3.11 only.",DECISION
+"Use minimal dependencies—no heavy frameworks.",DECISION
+"We’ll keep the codebase strictly typed.",DECISION
+"I want us to go with a clean-architecture layout.",DECISION
+"Let's set up Prettier as the formatter.",DECISION
+"We’ll avoid Webpack and use esbuild.",DECISION
+"Choose a flat folder hierarchy.",DECISION
+"Keep component names semantic.",DECISION
+"We’ll store configs in environment variables.",DECISION
+
+"I'm on macOS Ventura.",FACT
+"I'm in Eastern Time if that matters.",FACT
+"My main project is a personal study planner app.",FACT
+"I mostly write code in VS Code.",FACT
+"I'm building a lightweight task tracker.",FACT
+"I'm new to backend development.",FACT
+"I work primarily with JavaScript and Python.",FACT
+"My laptop is a 2020 Intel MacBook Pro.",FACT
+"I’m currently taking a distributed systems course.",FACT
+"My project uses Next.js and PostgreSQL.",FACT
+"I’m running Node 18 on this machine.",FACT
+"I’m learning Rust in my free time.",FACT
+"My internet connection is pretty slow sometimes.",FACT
+"I use GitHub for version control.",FACT
+"I'm building a tiny productivity dashboard.",FACT
+"I'm still learning Docker basics.",FACT
+"My workflow is mostly keyboard-driven.",FACT
+"I'm creating a microtool for habit tracking.",FACT
+"I study about 2 hours a day.",FACT
+"I use Ubuntu on my server.",FACT
+"My project is deployed on Vercel.",FACT
+"I’m working on a CLI tool for note-taking.",FACT
+"I’m using an M1 Mac for development.",FACT
+"My database of choice is PostgreSQL.",FACT
+"I keep all my notes in Obsidian.",FACT
+"I’m experimenting with LangChain for fun.",FACT
+"I'm working from a very old laptop today.",FACT
+"I’m using tmux and fish shell.",FACT
+"My personal wiki is in Markdown files.",FACT
+"I'm using Chrome as my main browser.",FACT
+"I code mostly late at night.",FACT
+"I'm building a tool that generates study plans.",FACT
+"My internet firewall blocks some ports.",FACT
+"I run most scripts with Python virtual envs.",FACT
+"I store all my configs in dotfiles.",FACT
+"I’m currently enrolled in a bootcamp.",FACT
+"Most of my projects are solo projects.",FACT
+"I'm debugging on Windows today.",FACT
+"I usually rely on ChatGPT for brainstorming.",FACT
+"My working directory is a mess right now.",FACT
+
+"How was your day so far?",OTHER
+"Do you ever get tired answering so many questions?",OTHER
+"Is it normal to feel overwhelmed learning all this stuff?",OTHER
+"Why is programming sometimes so frustrating?",OTHER
+"What's your opinion on dark mode vs light mode?",OTHER
+"I wonder how many people are coding right now.",OTHER
+"Do you think AI will replace programmers?",OTHER
+"Just curious—how do you know all this?",OTHER
+"Can you remind me what you are allowed to do?",OTHER
+"Is it weird that I enjoy writing documentation?",OTHER
+"What do you think is the hardest part of learning?",OTHER
+"Does everyone struggle with recursion at first?",OTHER
+"Is it okay to take long breaks when coding?",OTHER
+"I’m not sure what I even want to work on today.",OTHER
+"Do you also generate ideas, or only respond?",OTHER
+"Why do I keep procrastinating on small tasks?",OTHER
+"Is it fine to rewrite a project just for fun?",OTHER
+"I’m just thinking out loud about my workflow.",OTHER
+"Do you think coding is like solving puzzles?",OTHER
+"I'm not sure how I feel about AI tools lately.",OTHER
+"What’s the best mindset for learning?",OTHER
+"Do you think creativity matters in programming?",OTHER
+"Why do I always get stuck on the easy parts?",OTHER
+"I'm just venting because debugging is painful today.",OTHER
+"Is it weird to enjoy reading documentation?",OTHER
+"Kind of lost—maybe I need coffee first.",OTHER
+"Do you think pair programming helps beginners?",OTHER
+"How do people stay motivated long-term?",OTHER
+"Does everyone else also make silly mistakes?",OTHER
+"I feel like I'm missing something obvious.",OTHER
+"Why does my brain stop working late at night?",OTHER
+"I'm not asking anything—just talking.",OTHER
+"Sometimes I forget why I started coding in the first place.",OTHER
+"I'm probably overthinking things again.",OTHER
+"Do you think multitasking is real?",OTHER
+"Just checking if you're still here.",OTHER
+"Why is naming things so hard?",OTHER
+"I think I just need a break.",OTHER
+"I'm not sure what else to say right now.",OTHER
