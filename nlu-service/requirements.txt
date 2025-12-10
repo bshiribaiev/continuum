@@ -2,3 +2,5 @@ sentence-transformers
 pandas
 scikit-learn
 joblib
+fastapi
+uvicorn[standard]
