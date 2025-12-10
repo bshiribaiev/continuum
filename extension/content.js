@@ -86,7 +86,6 @@ async function transformPrompt(rawText) {
         workspaceId,
         source: "chatgpt_extension",
         text: rawText,
-        type: "TASK",
         topic: "chat",
         tags: null,
         importance: 3,
