@@ -5,14 +5,17 @@ package com.continuum.memory;
 import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.lang.NonNull;
+import com.continuum.nlu.NluClient;
 
 @Service
 public class MemoryService {
 
     private final MemoryRepository repository;
+    private final NluClient nluClient;
 
-    public MemoryService(MemoryRepository repository) {
+    public MemoryService(MemoryRepository repository, NluClient nluClient) {
         this.repository = repository;
+        this.nluClient = nluClient;
     }
 
     // Convert Memory entity into MemoryResponse
@@ -39,7 +42,15 @@ public class MemoryService {
         memory.workspaceId = request.workspaceId;
         memory.source = request.source;
         memory.content = request.content;
-        memory.type = (request.type == null || request.type.isBlank()) ? "OTHER" : request.type;
+        // Decide on the semantic type. Prefer explicit client type, otherwise ask NLU.
+        String resolvedType = request.type;
+        if (resolvedType == null || resolvedType.isBlank()) {
+            String predicted = nluClient.classifyIntent(memory.content);
+            if (predicted != null && !predicted.isBlank()) {
+                resolvedType = predicted;
+            }
+        }
+        memory.type = (resolvedType == null || resolvedType.isBlank()) ? "OTHER" : resolvedType;
         memory.topic = request.topic;
         memory.tags = request.tags;
         memory.importance = request.importance;
