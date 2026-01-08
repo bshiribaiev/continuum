@@ -71,5 +71,3 @@ public class WorkspaceController {
         return ResponseEntity.noContent().build();
     }
 }
-
-

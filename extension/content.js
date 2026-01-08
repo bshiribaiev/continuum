@@ -1,37 +1,34 @@
-const BACKEND_URL = "http://localhost:8080";
+const BACKEND_URL = "http://localhost:8080/api";
 const USER_ID_KEY = "continuumUserId";
 const WORKSPACE_ID_KEY = "continuumWorkspaceId";
-let lastIngestedText = null; // simple guard to avoid duplicate task memories
+
 console.log("[Continuum] content script loaded");
 
-// Ensure we have a stable userId for this browser
-async function getUserId() {
+// User & Workspace ID helpers 
+function getUserId() {
   return new Promise((resolve) => {
     chrome.storage.sync.get([USER_ID_KEY], async (result) => {
       if (result[USER_ID_KEY]) {
         resolve(result[USER_ID_KEY]);
         return;
       }
-
-      // Create a new user in Continuum
-      const username = "ext-" + Math.random().toString(36).slice(2, 10);
-      const resp = await fetch(`${BACKEND_URL}/api/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          email: `${username}@example.com`,
-          displayName: "Browser Extension User"
-        })
-      });
-      const data = await resp.json();
-      const userId = data.id;
-      chrome.storage.sync.set({ [USER_ID_KEY]: userId }, () => resolve(userId));
+      try {
+        const resp = await fetch(`${BACKEND_URL}/users`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "ChatGPT User" }),
+        });
+        const data = await resp.json();
+        const odcUid = data.id;
+        chrome.storage.sync.set({ [USER_ID_KEY]: odcUid }, () => resolve(odcUid));
+      } catch (e) {
+        console.error("[Continuum] failed to create user", e);
+        resolve(null);
+      }
     });
   });
 }
 
-// Ensure we have a stable workspace/project for this user (scopes context)
 async function getWorkspaceId(userId) {
   return new Promise((resolve) => {
     chrome.storage.sync.get([WORKSPACE_ID_KEY], async (result) => {
@@ -39,9 +36,8 @@ async function getWorkspaceId(userId) {
         resolve(result[WORKSPACE_ID_KEY]);
         return;
       }
-
       try {
-        const resp = await fetch(`${BACKEND_URL}/api/workspaces`, {
+        const resp = await fetch(`${BACKEND_URL}/workspaces`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -51,10 +47,7 @@ async function getWorkspaceId(userId) {
           }),
         });
         const data = await resp.json();
-        const workspaceId = data.id;
-        chrome.storage.sync.set({ [WORKSPACE_ID_KEY]: workspaceId }, () =>
-          resolve(workspaceId)
-        );
+        chrome.storage.sync.set({ [WORKSPACE_ID_KEY]: data.id }, () => resolve(data.id));
       } catch (e) {
         console.error("[Continuum] failed to create workspace", e);
         resolve(null);
@@ -63,169 +56,242 @@ async function getWorkspaceId(userId) {
   });
 }
 
-async function transformPrompt(rawText) {
-  console.log("[Continuum] transformPrompt called with:", rawText);
+// API helpers
+async function saveToMemory(text) {
   const userId = await getUserId();
   const workspaceId = await getWorkspaceId(userId);
-
-  // Detect if this already looks like a woven Continuum prompt
-  const looksLikeWovenPrompt =
-    rawText.includes("===== CONTEXT START =====") ||
-    rawText.includes("You are an AI assistant that uses a persistent memory layer (Continuum)");
-
-  if (looksLikeWovenPrompt) {
-    console.log("[Continuum] skipping ingestion; text already looks like woven prompt");
-  } 
-  else if (rawText !== lastIngestedText) {
-    console.log("[Continuum] ingesting new task memory");
-    await fetch(`${BACKEND_URL}/api/ingestion/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        workspaceId,
-        source: "chatgpt_extension",
-        text: rawText,
-        topic: "chat",
-        tags: null,
-        importance: 3,
-      }),
-    });
-    lastIngestedText = rawText;
-  } else {
-    console.log("[Continuum] skipping ingestion for duplicate task text");
-  }
-
-  // 2) Generate woven prompt
-  const resp = await fetch(`${BACKEND_URL}/api/prompts/generate`, {
+  
+  await fetch(`${BACKEND_URL}/ingestion/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       userId,
       workspaceId,
-      task: rawText,
+      source: "chatgpt_extension",
+      text,
+      topic: "chat",
+      importance: 3,
+    }),
+  });
+  console.log("[Continuum] Saved to memory");
+}
+
+async function getEnhancedPrompt(text) {
+  const userId = await getUserId();
+  const workspaceId = await getWorkspaceId(userId);
+  
+  const resp = await fetch(`${BACKEND_URL}/prompts/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId,
+      workspaceId,
+      task: text,
       contextLimit: 10,
       includeSystemInstructions: true,
     }),
   });
-
   const data = await resp.json();
-  return data.prompt || rawText;
+  return data.prompt || text;
 }
 
-function hookChatGPT() {
-  console.log("[Continuum] hookChatGPT running");
+// Overlay Button UI
+function createOverlayButton() {
+  const existing = document.getElementById("continuum-overlay");
+  if (existing) existing.remove();
 
-  let busy = false;
-  let readyToSend = false; // after transform, let the next send through
-
-  async function handleSend(source) {
-    if (busy) return;
-    busy = true;
-    try {
-      // Always re-query the current input
-      const textarea =
-        document.querySelector("#prompt-textarea") || // main ChatGPT input
-        document.querySelector("textarea") ||
-        document.querySelector('div[contenteditable="true"]');
-
-      if (!textarea) {
-        console.warn("[Continuum] No input element found");
-        busy = false;
-        return;
+  const container = document.createElement("div");
+  container.id = "continuum-overlay";
+  container.innerHTML = `
+    <style>
+      #continuum-overlay {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       }
-
-      const isTextarea = textarea.tagName && textarea.tagName.toLowerCase() === "textarea";
-      const original = (isTextarea ? textarea.value : textarea.textContent).trim();
-      if (!original) {
-        busy = false;
-        return;
+      #continuum-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-
-      console.log("[Continuum] handleSend from", source, "with:", original);
-
-      const woven = await transformPrompt(original);
-
-      // Replace user text with woven prompt
-      if (isTextarea) {
-        textarea.value = woven;
-      } else {
-        textarea.textContent = woven;
+      #continuum-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
       }
-      
-      // Notify React/ProseMirror that the content changed
-      try {
-        const inputEvent =
-          typeof InputEvent === "function"
-            ? new InputEvent("input", { bubbles: true, cancelable: true })
-            : new Event("input", { bubbles: true, cancelable: true });
-
-        textarea.dispatchEvent(inputEvent);
-        console.log("[Continuum] dispatched input event");
-      } catch (e) {
-        console.warn("[Continuum] failed to dispatch input event:", e);
+      #continuum-menu {
+        display: none;
+        position: absolute;
+        bottom: 55px;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        overflow: hidden;
+        min-width: 180px;
       }
+      #continuum-menu.show { display: block; }
+      .continuum-menu-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #333;
+        transition: background 0.15s;
+        border-bottom: 1px solid #eee;
+      }
+      .continuum-menu-item:last-child { border-bottom: none; }
+      .continuum-menu-item:hover { background: #f5f5f5; }
+      .continuum-menu-item .icon { margin-right: 8px; }
+    </style>
+    <div id="continuum-menu">
+      <div class="continuum-menu-item" data-action="enhance">
+        <span class="icon">✨</span> Enhance Prompt
+      </div>
+      <div class="continuum-menu-item" data-action="save">
+        <span class="icon">💾</span> Save to Memory
+      </div>
+      <div class="continuum-menu-item" data-action="both">
+        <span class="icon">🚀</span> Enhance + Save
+      </div>
+    </div>
+    <button id="continuum-btn">
+      <span>✨</span> Continuum
+    </button>
+  `;
 
-      // Give React a moment to process the input event and update its state
-      await new Promise((resolve) => setTimeout(resolve, 50));
+  document.body.appendChild(container);
 
-      console.log("[Continuum] prompt transformed, ready to send");
-      readyToSend = true; // next Enter/click will send without re-transforming
-    } catch (err) {
-      console.error("[Continuum] error in handleSend:", err);
-    } finally {
-      busy = false;
+  // Toggle menu
+  const btn = document.getElementById("continuum-btn");
+  const menu = document.getElementById("continuum-menu");
+  
+  btn.addEventListener("click", () => {
+    menu.classList.toggle("show");
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!container.contains(e.target)) {
+      menu.classList.remove("show");
     }
-  }
+  });
 
-  // Intercept ANY Enter (no Shift) on the page (capture)
-  document.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        // If already transformed, let it send
-        if (readyToSend) {
-          console.log("[Continuum] Enter: sending transformed prompt");
-          readyToSend = false;
-          return; // let the event through
-        }
-        console.log("[Continuum] Enter detected, calling handleSend");
-        e.preventDefault();
-        handleSend("keydown");
+  // Menu actions
+  menu.addEventListener("click", async (e) => {
+    const action = e.target.closest(".continuum-menu-item")?.dataset.action;
+    if (!action) return;
+    
+    menu.classList.remove("show");
+    
+    // Find ChatGPT's textarea
+    const textarea = document.querySelector('textarea[data-id="root"]') 
+                  || document.querySelector("#prompt-textarea")
+                  || document.querySelector('div[contenteditable="true"]');
+    
+    if (!textarea) {
+      console.error("[Continuum] Could not find input area");
+      return;
+    }
+
+    const currentText = textarea.value || textarea.innerText || textarea.textContent;
+    if (!currentText.trim()) {
+      console.log("[Continuum] No text to process");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Working...';
+
+    try {
+      if (action === "save") {
+        await saveToMemory(currentText);
+        showToast("Saved to memory! 💾");
+      } else if (action === "enhance") {
+        const enhanced = await getEnhancedPrompt(currentText);
+        setTextAreaValue(textarea, enhanced);
+        showToast("Prompt enhanced! ✨");
+      } else if (action === "both") {
+        await saveToMemory(currentText);
+        const enhanced = await getEnhancedPrompt(currentText);
+        setTextAreaValue(textarea, enhanced);
+        showToast("Saved & enhanced! 🚀");
       }
-    },
-    true
-  );
+    } catch (err) {
+      console.error("[Continuum] Error:", err);
+      showToast("Error - check console", true);
+    }
 
-  // Intercept pointerdown on the send button (capture) - fires BEFORE click
-  document.addEventListener(
-    "pointerdown",
-    (e) => {
-      const btn = e.target.closest(
-        'button[data-testid="send-button"], #composer-submit-button'
-      );
-      if (!btn) return;
-
-      // If already transformed, let it send
-      if (readyToSend) {
-        console.log("[Continuum] pointerdown: sending transformed prompt");
-        readyToSend = false;
-        return; // let the event through
-      }
-
-      console.log("[Continuum] send button pointerdown detected");
-
-      // Prevent ChatGPT's own handlers from sending the original prompt
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      // Transform the prompt (don't auto-send)
-      handleSend("pointerdown");
-    },
-    true
-  );
-
-  console.log("[Continuum] Input hooks attached");
+    btn.disabled = false;
+    btn.innerHTML = '<span>✨</span> Continuum';
+  });
 }
-// Wait a bit for ChatGPT UI to render
-setTimeout(hookChatGPT, 2000);
+
+function setTextAreaValue(textarea, value) {
+  if (textarea.tagName === "TEXTAREA") {
+    textarea.value = value;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  } else {
+    // contenteditable div
+    textarea.innerText = value;
+    textarea.dispatchEvent(new InputEvent("input", { bubbles: true }));
+  }
+}
+
+function showToast(message, isError = false) {
+  const toast = document.createElement("div");
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 160px;
+    right: 30px;
+    background: ${isError ? "#ef4444" : "#10b981"};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 10001;
+    animation: fadeInOut 2s ease forwards;
+  `;
+  toast.textContent = message;
+  
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(10px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-10px); }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.remove(), 2000);
+}
+
+// Initialize
+function init() {
+  // Wait for ChatGPT to load
+  const checkReady = setInterval(() => {
+    const textarea = document.querySelector('textarea[data-id="root"]') 
+                  || document.querySelector("#prompt-textarea")
+                  || document.querySelector('div[contenteditable="true"]');
+    if (textarea) {
+      clearInterval(checkReady);
+      createOverlayButton();
+      console.log("[Continuum] Overlay button injected");
+    }
+  }, 500);
+}
+
+init();

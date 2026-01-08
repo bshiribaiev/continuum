@@ -23,5 +23,3 @@ public class UserDto {
         public String displayName;
     }
 }
-
-
